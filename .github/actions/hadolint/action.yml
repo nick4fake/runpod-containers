@@ -1,5 +1,5 @@
 name: Hadolint
-description: Lint Dockerfiles via hadolint/hadolint-action (reuse with uses: ./.github/actions/hadolint)
+description: "Lint Dockerfiles via hadolint/hadolint-action (reuse with uses: ./.github/actions/hadolint)"
 inputs:
   failure-threshold:
     description: Fail when violations meet or exceed this severity (error, warning, info, style, ignore). Default error avoids failing on existing style warnings while still failing on errors.
