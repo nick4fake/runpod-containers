@@ -1,7 +1,7 @@
 name: Docker Image Build and Release
 
 on:
-  push:
+  pull_request:
     paths:
       - ".github/workflows/base.yml"
       - "official-templates/base/docker-bake.hcl"
@@ -43,7 +43,8 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/base/docker-bake.hcl
-          push: true
+          # push: true
+          push: false
 
   build-autoresearch:
     needs: build-base
@@ -84,7 +85,8 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/autoresearch/docker-bake.hcl
-          push: true
+          # push: true
+          push: false
 
   build-pytorch:
     needs: build-base
@@ -125,4 +127,5 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/pytorch/docker-bake.hcl
-          push: true
+          # push: true
+          push: false

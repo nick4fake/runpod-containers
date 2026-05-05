@@ -37,4 +37,5 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/rocm/docker-bake.hcl
-          push: true
+          # push: true
+          push: false

@@ -1,7 +1,7 @@
 name: Nvidia Image Build
 
 on:
-  push:
+  pull_request:
     paths:
       - ".github/workflows/nvidia.yml"
       - "official-templates/nvidia-*/**"
@@ -37,5 +37,6 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/nvidia-pytorch/docker-bake.hcl
-          push: true
+          # push: true
+          push: false
 

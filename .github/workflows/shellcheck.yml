@@ -2,11 +2,6 @@ name: Shellcheck
 
 on:
   pull_request:
-    paths:
-      - "container-template/*.sh"
-      - "helper-templates/**/*.sh"
-      - "scripts/*.sh"
-      - ".github/workflows/shellcheck.yml"
   workflow_dispatch:
 
 permissions:

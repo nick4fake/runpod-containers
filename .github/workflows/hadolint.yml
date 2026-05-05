@@ -2,11 +2,6 @@ name: Hadolint
 
 on:
   pull_request:
-    paths:
-      - "official-templates/**/Dockerfile"
-      - "helper-templates/**/Dockerfile"
-      - ".github/actions/hadolint/**"
-      - ".github/workflows/hadolint.yml"
   workflow_dispatch:
 
 permissions:
@@ -35,6 +30,7 @@ jobs:
           dockerfile: ${{ matrix.dockerfile }}
 
       - name: Upload Hadolint SARIF to Code Scanning
+        if: ${{ always() && hashFiles('hadolint.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: hadolint.sarif
