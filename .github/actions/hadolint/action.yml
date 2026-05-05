@@ -18,13 +18,13 @@ inputs:
     required: false
     default: "official-templates/base/Dockerfile"
   format:
-    description: "Hadolint output format (tty, json, sarif, checkstyle, ...)"
+    description: "tty = PR inline annotations (recommended); sarif = file for github/codeql-action/upload-sarif (Code Scanning tab)"
     required: false
-    default: "sarif"
+    default: "tty"
   output-file:
-    description: Path under the workspace where results are written (required for non-tty formats used with upload-sarif)
+    description: "Use /dev/stdout with format tty. For sarif, set a path e.g. hadolint.sarif for upload-sarif."
     required: false
-    default: "hadolint.sarif"
+    default: "/dev/stdout"
 
 runs:
   using: composite
