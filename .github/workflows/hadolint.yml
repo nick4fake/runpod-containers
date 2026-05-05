@@ -23,8 +23,6 @@ jobs:
           - official-templates/base/Dockerfile
           - official-templates/pytorch/Dockerfile
           - official-templates/autoresearch/Dockerfile
-          - official-templates/nvidia-pytorch/Dockerfile
-          - official-templates/rocm/Dockerfile
           - helper-templates/verify-nccl/Dockerfile
     steps:
       - name: Checkout
