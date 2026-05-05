@@ -27,16 +27,15 @@ jobs:
           - helper-templates/verify-nccl/Dockerfile
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Lint Dockerfile
         uses: ./.github/actions/hadolint
         with:
           dockerfile: ${{ matrix.dockerfile }}
 
-      # - name: Upload Hadolint SARIF to Code Scanning
-      #   if: ${{ always() && hashFiles('hadolint.sarif') != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-      #   uses: github/codeql-action/upload-sarif@v3
-      #   with:
-      #     sarif_file: hadolint.sarif
-      #     category: hadolint-${{ replace(matrix.dockerfile, '/', '-') }}
+      - name: Upload Hadolint SARIF to Code Scanning
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: hadolint.sarif
+          category: hadolint-${{ replace(matrix.dockerfile, '/', '-') }}
