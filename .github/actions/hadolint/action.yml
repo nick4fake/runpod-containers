@@ -37,4 +37,3 @@ runs:
         ignore: ${{ inputs.ignore }}
         trusted-registries: ${{ inputs.trusted-registries }}
         format: ${{ inputs.format }}
-        output-file: ${{ inputs.output-file }}
