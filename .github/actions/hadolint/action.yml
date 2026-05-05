@@ -17,31 +17,24 @@ inputs:
     description: Path to Dockerfile to lint (workflows often pass this from a matrix)
     required: false
     default: "official-templates/base/Dockerfile"
+  format:
+    description: "Hadolint output format (tty, json, sarif, checkstyle, ...)"
+    required: false
+    default: "sarif"
+  output-file:
+    description: Path under the workspace where results are written (required for non-tty formats used with upload-sarif)
+    required: false
+    default: "hadolint.sarif"
 
 runs:
   using: composite
   steps:
-    - uses: hadolint/hadolint-action@v3.1.0
+    - id: hadolint
+      uses: hadolint/hadolint-action@v3.1.0
       with:
         dockerfile: ${{ inputs.dockerfile }}
         failure-threshold: ${{ inputs.failure-threshold }}
         ignore: ${{ inputs.ignore }}
         trusted-registries: ${{ inputs.trusted-registries }}
-    - name: Update Pull Request
-      uses: actions/github-script@v6
-      if: github.event_name == 'pull_request'
-      with:
-        script: |
-          const output = `
-          #### Hadolint: \`${{ steps.hadolint.outcome }}\`
-          \`\`\`
-          ${process.env.HADOLINT_RESULTS}
-          \`\`\`
-          `;
-
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          })
+        format: ${{ inputs.format }}
+        output-file: ${{ inputs.output-file }}
