@@ -34,4 +34,4 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: hadolint.sarif
-          category: hadolint-${{ replace(matrix.dockerfile, '/', '-') }}
+          category: hadolint-${{ strategy.job-index }}
