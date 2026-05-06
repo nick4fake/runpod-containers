@@ -34,6 +34,7 @@ jobs:
       #     dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build base images
+        id: bake
         uses: docker/bake-action@v6
         env:
           BUILDX_BAKE_ENTITLEMENTS_FS: 0
@@ -47,15 +48,45 @@ jobs:
           load: true
           push: false
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'docker.io/runpod/base:1.0.3test-ubuntu2204' # Must match your Bake target tag
-          format: 'table'
-          exit-code: '1' # Fails the pipeline if critical issues are found
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+      # aquasecurity/trivy-action accepts only one image-ref per step; workflows cannot loop `uses:`.
+      # Same job + load:true → each image.name exists locally; this runs the same Trivy CLI the action wraps.
+      - name: Trivy scan all images from bake metadata
+        env:
+          BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
+        run: |
+          set -euo pipefail
+          echo "${BAKE_METADATA}" | jq -r 'to_entries[] | .value["image.name"] // empty' | sort -u > "${RUNNER_TEMP}/trivy-refs.txt"
+          if ! grep -q . "${RUNNER_TEMP}/trivy-refs.txt"; then
+            echo "No image.name in bake metadata"
+            exit 1
+          fi
+          echo "Scanning:"
+          cat "${RUNNER_TEMP}/trivy-refs.txt"
+          TV="aquasec/trivy:0.58.1"
+          while IFS= read -r ref || [ -n "${ref}" ]; do
+            [ -z "${ref}" ] && continue
+            echo "::group::Trivy — ${ref}"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${TV}" image \
+              --severity CRITICAL,HIGH \
+              --exit-code 1 \
+              --ignore-unfixed \
+              --vuln-type os,library \
+              --format table \
+              --no-progress \
+              "${ref}"
+            echo "::endgroup::"
+          done < "${RUNNER_TEMP}/trivy-refs.txt"
+
+      # Optional: one pinned trivy-action step for a single “golden” ref (same flags as above).
+      # - name: Run Trivy vulnerability scanner (one image)
+      #   uses: aquasecurity/trivy-action@v0.31.0
+      #   with:
+      #     image-ref: 'docker.io/runpod/base:1.0.3test-ubuntu2204'
+      #     format: table
+      #     exit-code: '1'
+      #     ignore-unfixed: true
+      #     vuln-type: os,library
+      #     severity: CRITICAL,HIGH
 
   build-autoresearch:
     needs: build-base
