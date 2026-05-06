@@ -61,15 +61,13 @@ RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*;
 
-# Install pip
+# Install pip (3.9 needs the versioned bootstrap; the default script requires Python 3.10+)
 RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python3.9  get-pip.py && \
-    python3.10 get-pip.py && \
-    python3.11 get-pip.py && \
-    python3.12 get-pip.py && \
-    python3.13 get-pip.py && \
-    rm get-pip.py;
+    curl -sS https://bootstrap.pypa.io/pip/3.9/get-pip.py | python3.9 && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10 && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12 && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13;
 
 # Install virtualenv
 RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
