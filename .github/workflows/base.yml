@@ -49,7 +49,11 @@ jobs:
           push: false
 
       # aquasecurity/trivy-action accepts only one image-ref per step; workflows cannot loop `uses:`.
-      # Same job + load:true → each image.name exists locally; this runs the same Trivy CLI the action wraps.
+      # Same job + load:true → each image.name exists locally.
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.58.1
+
       - name: Trivy scan all images from bake metadata
         env:
           BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
@@ -62,11 +66,10 @@ jobs:
           fi
           echo "Scanning:"
           cat "${RUNNER_TEMP}/trivy-refs.txt"
-          TV="aquasec/trivy:0.58.1"
           while IFS= read -r ref || [ -n "${ref}" ]; do
             [ -z "${ref}" ] && continue
             echo "::group::Trivy — ${ref}"
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${TV}" image \
+            trivy image \
               --severity CRITICAL,HIGH \
               --exit-code 1 \
               --ignore-unfixed \
