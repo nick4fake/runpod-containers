@@ -26,12 +26,12 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Setup Docker
-        uses: ./.github/actions/docker-setup
-        id: setup
-        with:
-          dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
-          dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+      # - name: Setup Docker
+      #   uses: ./.github/actions/docker-setup
+      #   id: setup
+      #   with:
+      #     dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build base images
         uses: docker/bake-action@v6
