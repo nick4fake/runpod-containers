@@ -72,7 +72,7 @@ export_env_vars() {
     fi
 }
 
-# Start jupyter lab
+## Start jupyter lab
 start_jupyter() {
     if [[ $JUPYTER_PASSWORD ]]; then
         echo "Starting Jupyter Lab..."
