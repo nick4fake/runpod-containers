@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  checks: write
 
 jobs:
   shellcheck:
@@ -18,4 +20,4 @@ jobs:
         uses: reviewdog/action-shellcheck@5ebd09ddbe2ebb471646ce234c6c8dd18663ca7c
         with:
           fail_level: warning
-          
+
