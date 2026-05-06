@@ -37,14 +37,25 @@ jobs:
         uses: docker/bake-action@v6
         env:
           BUILDX_BAKE_ENTITLEMENTS_FS: 0
-          RELEASE_SUFFIX: ${{ steps.setup.outputs.release-suffix }}
+          RELEASE_SUFFIX: "test"
         with:
           source: .
           files: |
             official-templates/shared/versions.hcl
             official-templates/base/docker-bake.hcl
           # push: true
+          load: true
           push: false
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'docker.io/runpod/base:1.0.3test-ubuntu2204' # Must match your Bake target tag
+          format: 'table'
+          exit-code: '1' # Fails the pipeline if critical issues are found
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
 
   build-autoresearch:
     needs: build-base
