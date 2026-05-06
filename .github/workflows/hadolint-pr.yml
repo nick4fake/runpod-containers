@@ -29,5 +29,6 @@ jobs:
         uses: ./.github/actions/hadolint
         with:
           dockerfile: ${{ matrix.dockerfile }}
+          failure-threshold: warning
           format: tty
           output-file: /dev/stdout

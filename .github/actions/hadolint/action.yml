@@ -9,10 +9,6 @@ inputs:
     description: Comma-separated Hadolint rule codes to ignore
     required: false
     default: ""
-  trusted-registries:
-    description: Comma-separated trusted registry URLs
-    required: false
-    default: ""
   dockerfile:
     description: Path to Dockerfile to lint (workflows often pass this from a matrix)
     required: false
@@ -35,6 +31,5 @@ runs:
         dockerfile: ${{ inputs.dockerfile }}
         failure-threshold: ${{ inputs.failure-threshold }}
         ignore: ${{ inputs.ignore }}
-        trusted-registries: ${{ inputs.trusted-registries }}
         format: ${{ inputs.format }}
         output-file: ${{ inputs.output-file }}
