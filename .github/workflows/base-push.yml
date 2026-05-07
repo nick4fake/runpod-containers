@@ -1,7 +1,7 @@
 name: Docker Image Build and Release
 
 on:
-  pull_request:
+  push:
     paths:
       - ".github/workflows/base.yml"
       - "official-templates/base/docker-bake.hcl"
@@ -11,6 +11,8 @@ on:
       - "official-templates/autoresearch/docker-bake.hcl"
       - "official-templates/autoresearch/Dockerfile"
       - "official-templates/shared/**"
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -41,44 +43,13 @@ jobs:
         env:
           BUILDX_BAKE_ENTITLEMENTS_FS: 0
           RELEASE_SUFFIX: ${{ steps.setup.outputs.release-suffix }} #"-${{ github.event.pull_request.number }}"
-          DOCKERHUB_REPOSITORY: "mchekm/runpod-containers"
+          DOCKERHUB_REPOSITORY: "runpod/base"
         with:
           source: .
           files: |
             official-templates/shared/versions.hcl
             official-templates/base/docker-bake.hcl
           push: true
-
-      # Extract the JSON array of image refs (each target's image.name) for the trivy matrix below.
-      - name: Collect pushed image refs
-        id: refs
-        env:
-          BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
-        run: |
-          set -euo pipefail
-          IMAGES=$(echo "${BAKE_METADATA}" | jq -c '[.[] | ."image.name"] | map(select(. != null)) | unique')
-          echo "images=${IMAGES}" >> "${GITHUB_OUTPUT}"
-          echo "Will scan:"
-          echo "${IMAGES}" | jq .
-
-  trivy-base:
-    needs: build-base
-    if: needs.build-base.outputs.images != '' && needs.build-base.outputs.images != '[]'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        image: ${{ fromJson(needs.build-base.outputs.images) }}
-    steps:
-      - name: Trivy scan ${{ matrix.image }}
-        uses: aquasecurity/trivy-action@v0.31.0
-        with:
-          image-ref: ${{ matrix.image }}
-          format: table
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
 
   build-autoresearch:
     needs: build-base

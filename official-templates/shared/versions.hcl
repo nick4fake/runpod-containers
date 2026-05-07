@@ -4,6 +4,10 @@ variable "RELEASE_SUFFIX" {
   default = "" # Set by CI, not used by humans.
 }
 
+variable "DOCKERHUB_REPOSITORY" {
+  default = "runpod/base"
+}
+
 UBUNTU_VERSIONS = [
   {
     version = "22.04"

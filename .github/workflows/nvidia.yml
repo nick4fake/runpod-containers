@@ -1,7 +1,7 @@
 name: Nvidia Image Build
 
 on:
-  push:
+  pull_request:
     paths:
       - ".github/workflows/nvidia.yml"
       - "official-templates/nvidia-*/**"
@@ -13,10 +13,10 @@ permissions:
 
 jobs:
   build-nvidia:
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: ubuntu-latest #blacksmith-16vcpu-ubuntu-2404
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
@@ -37,5 +37,6 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/nvidia-pytorch/docker-bake.hcl
-          push: true
+          # push: true
+          push: false
 
