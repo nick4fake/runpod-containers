@@ -56,7 +56,7 @@ target "cuda-matrix" {
   }
   
   tags = [
-    "runpod/base:${RELEASE_VERSION}${RELEASE_SUFFIX}-cuda${combo.cuda_code}-${combo.ubuntu_name}",
+    "${DOCKERHUB_REPOSITORY}:${RELEASE_VERSION}${RELEASE_SUFFIX}-cuda${combo.cuda_code}-${combo.ubuntu_name}",
   ]
   
   args = {
