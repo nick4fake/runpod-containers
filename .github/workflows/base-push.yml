@@ -51,18 +51,6 @@ jobs:
             official-templates/base/docker-bake.hcl
           push: true
 
-      # Extract the JSON array of image refs (each target's image.name) for the trivy matrix below.
-      - name: Collect pushed image refs
-        id: refs
-        env:
-          BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
-        run: |
-          set -euo pipefail
-          IMAGES=$(echo "${BAKE_METADATA}" | jq -c '[.[] | ."image.name"] | map(select(. != null)) | unique')
-          echo "images=${IMAGES}" >> "${GITHUB_OUTPUT}"
-          echo "Will scan:"
-          echo "${IMAGES}" | jq .
-
   build-autoresearch:
     needs: build-base
     if: always() && (needs.build-base.result == 'success' || needs.build-base.result == 'skipped')
