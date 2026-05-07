@@ -21,7 +21,7 @@ jobs:
         # with:
         #   format: sarif
         #   severity: warning
-        uses: reviewdog/action-shellcheck@5ebd09ddbe2ebb471646ce234c6c8dd18663ca7c
+        uses: reviewdog/action-shellcheck@v1.32.0
         with:
           fail_level: warning
           reporter: github-check
