@@ -26,13 +26,13 @@ jobs:
         #   fail_level: warning
         #   reporter: github-check
 
-      - name: Convert ShellCheck JSON to SARIF
-        if: always()
-        run: |
-          npx shellcheck-sarif shellcheck.json > shellcheck.sarif
+      # - name: Convert ShellCheck JSON to SARIF
+      #   if: always()
+      #   run: |
+      #     npx shellcheck-sarif shellcheck.json > shellcheck.sarif
 
-      - name: Upload SARIF to GitHub Code Scanning
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: shellcheck.sarif
+      # - name: Upload SARIF to GitHub Code Scanning
+      #   if: always()
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: shellcheck.sarif
