@@ -17,14 +17,15 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Shellcheck
-        uses: ludeeus/action-shellcheck@master
-        with:
-        #   format: json1
-          severity: warning
-        # uses: reviewdog/action-shellcheck@v1.32.0
+        # uses: ludeeus/action-shellcheck@master
         # with:
-        #   fail_level: warning
-        #   reporter: github-check
+        #   format: json1
+        uses: reviewdog/action-shellcheck@v1.32.0
+        with:
+          fail_level: any
+          reporter: github-check
+          # path: |
+          #   container-template
 
       # - name: Convert ShellCheck JSON to SARIF
       #   if: always()
