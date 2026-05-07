@@ -25,7 +25,7 @@ jobs:
           fail_level: any
           reporter: github-check
           path: |
-            container-template
+            scripts
 
       # - name: Convert ShellCheck JSON to SARIF
       #   if: always()
