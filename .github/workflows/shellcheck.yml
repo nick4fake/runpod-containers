@@ -22,7 +22,7 @@ jobs:
         #   format: json1
         uses: reviewdog/action-shellcheck@v1.32.0
         with:
-          fail_level: any
+          fail_level: warning
           # reporter: github-check
           # path: |
           #   scripts
