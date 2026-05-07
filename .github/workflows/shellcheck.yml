@@ -23,9 +23,9 @@ jobs:
         uses: reviewdog/action-shellcheck@v1.32.0
         with:
           fail_level: any
-          reporter: github-check
-          path: |
-            scripts
+          # reporter: github-check
+          # path: |
+          #   scripts
 
       # - name: Convert ShellCheck JSON to SARIF
       #   if: always()
