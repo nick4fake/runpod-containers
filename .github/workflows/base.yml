@@ -40,7 +40,7 @@ jobs:
         uses: docker/bake-action@v6
         env:
           BUILDX_BAKE_ENTITLEMENTS_FS: 0
-          RELEASE_SUFFIX: "-${{ github.event.pull_request.number }}"
+          RELEASE_SUFFIX: ${{ steps.setup.outputs.release-suffix }} #"-${{ github.event.pull_request.number }}"
           DOCKERHUB_REPOSITORY: "mchekm/runpod-containers"
         with:
           source: .
