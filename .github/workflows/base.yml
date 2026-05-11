@@ -1,7 +1,7 @@
 name: Docker Image Build and Release
 
 on:
-  push:
+  pull_request:
     paths:
       - ".github/workflows/base.yml"
       - "official-templates/base/docker-bake.hcl"
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   build-base:
-    runs-on: blacksmith-8vcpu-ubuntu-2204
+    runs-on: ubuntu-latest #blacksmith-8vcpu-ubuntu-2204
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,7 +43,30 @@ jobs:
           files: |
             official-templates/shared/versions.hcl
             official-templates/base/docker-bake.hcl
-          push: true
+          load: true
+          push: false #true
+      
+      - name: Install Grype
+        run: |
+          curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b /usr/local/bin
+
+      - name: Grype scan all images from bake metadata
+        env:
+          BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
+        run: |
+          set -euo pipefail
+          echo "${BAKE_METADATA}" | jq -r 'to_entries[] | .value["image.name"] // empty' | sort -u > "${RUNNER_TEMP}/grype-refs.txt"
+          if ! grep -q . "${RUNNER_TEMP}/grype-refs.txt"; then
+            echo "No image.name in bake metadata"
+            exit 1
+          fi
+          echo "Scanning:"
+          cat "${RUNNER_TEMP}/grype-refs.txt"
+          while IFS= read -r ref || [ -n "${ref}" ]; do
+            [ -z "${ref}" ] && continue
+            grype "${ref}"
+            echo "::endgroup::"
+          done < "${RUNNER_TEMP}/grype-refs.txt"
 
   build-autoresearch:
     needs: build-base
