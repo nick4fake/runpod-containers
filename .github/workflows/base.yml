@@ -47,27 +47,39 @@ jobs:
           load: true
           push: false #true
       
-      - name: Install Grype
-        run: |
-          curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b /usr/local/bin
+      # - name: Install Grype
+      #   run: |
+      #     curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b /usr/local/bin
 
-      - name: Grype scan all images from bake metadata
-        env:
-          BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
-        run: |
-          set -euo pipefail
-          echo "${BAKE_METADATA}" | jq -r 'to_entries[] | .value["image.name"] // empty' | sort -u > "${RUNNER_TEMP}/grype-refs.txt"
-          if ! grep -q . "${RUNNER_TEMP}/grype-refs.txt"; then
-            echo "No image.name in bake metadata"
-            exit 1
-          fi
-          echo "Scanning:"
-          cat "${RUNNER_TEMP}/grype-refs.txt"
-          while IFS= read -r ref || [ -n "${ref}" ]; do
-            [ -z "${ref}" ] && continue
-            grype "${ref}"
-            echo "::endgroup::"
-          done < "${RUNNER_TEMP}/grype-refs.txt"
+      # - name: Grype scan all images from bake metadata
+      #   env:
+      #     BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
+      #   run: |
+      #     set -euo pipefail
+      #     echo "${BAKE_METADATA}" | jq -r 'to_entries[] | .value["image.name"] // empty' | sort -u > "${RUNNER_TEMP}/grype-refs.txt"
+      #     if ! grep -q . "${RUNNER_TEMP}/grype-refs.txt"; then
+      #       echo "No image.name in bake metadata"
+      #       exit 1
+      #     fi
+      #     echo "Scanning:"
+      #     cat "${RUNNER_TEMP}/grype-refs.txt"
+      #     while IFS= read -r ref || [ -n "${ref}" ]; do
+      #       [ -z "${ref}" ] && continue
+      #       grype "${ref}"
+      #       echo "::endgroup::"
+      #     done < "${RUNNER_TEMP}/grype-refs.txt"
+
+      - name: Trivy
+        uses: aquasecurity/trivy-action@v0.31.0
+        with:
+          image-ref: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
+          format: table
+          ignore-unfixed: true
+
+      - name: Grype
+        uses: anchore/grype-action@v1.0.0
+        with:
+          image-ref: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
 
   build-autoresearch:
     needs: build-base
