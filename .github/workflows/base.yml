@@ -77,7 +77,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Grype
-        uses: anchore/grype-action@v1.0.0
+        uses: anchore/scan-action@v7
         with:
           image-ref: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
 
