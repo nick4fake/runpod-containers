@@ -92,7 +92,7 @@ jobs:
       - name: Grype
         uses: anchore/scan-action@v7
         with:
-          image-ref: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
+          image: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
 
   build-autoresearch:
     needs: build-base
