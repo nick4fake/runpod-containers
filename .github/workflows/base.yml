@@ -69,6 +69,19 @@ jobs:
       #       echo "::endgroup::"
       #     done < "${RUNNER_TEMP}/grype-refs.txt"
 
+      - name: Keep only the image under test
+        env:
+          KEEP: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
+        run: |
+          set -euo pipefail
+          docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep -v '^<none>:<none>$' \
+            | grep -v "^${KEEP}$" \
+            | xargs -r -n1 docker rmi -f || true
+          docker image prune -af
+          docker builder prune -af
+          df -h /
+
       - name: Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
