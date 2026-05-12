@@ -23,7 +23,7 @@ jobs:
           args: >
             -Dsonar.branch.name=${{ github.ref_name }}
 
-       - name: SonarQube Quality Gate check
+      - name: SonarQube Quality Gate check
         id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@master
         with:
