@@ -47,53 +47,12 @@ jobs:
             official-templates/base/docker-bake.hcl
           load: true
           push: false #true
-      
-      # - name: Install Grype
-      #   run: |
-      #     curl -sSfL https://get.anchore.io/grype | sudo sh -s -- -b /usr/local/bin
 
-      # - name: Grype scan all images from bake metadata
-      #   env:
-      #     BAKE_METADATA: ${{ steps.bake.outputs.metadata }}
-      #   run: |
-      #     set -euo pipefail
-      #     echo "${BAKE_METADATA}" | jq -r 'to_entries[] | .value["image.name"] // empty' | sort -u > "${RUNNER_TEMP}/grype-refs.txt"
-      #     if ! grep -q . "${RUNNER_TEMP}/grype-refs.txt"; then
-      #       echo "No image.name in bake metadata"
-      #       exit 1
-      #     fi
-      #     echo "Scanning:"
-      #     cat "${RUNNER_TEMP}/grype-refs.txt"
-      #     while IFS= read -r ref || [ -n "${ref}" ]; do
-      #       [ -z "${ref}" ] && continue
-      #       grype "${ref}"
-      #       echo "::endgroup::"
-      #     done < "${RUNNER_TEMP}/grype-refs.txt"
-
-      - name: Keep only the image under test
-        env:
-          KEEP: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
-        run: |
-          set -euo pipefail
-          docker images --format '{{.Repository}}:{{.Tag}}' \
-            | grep -v '^<none>:<none>$' \
-            | grep -v "^${KEEP}$" \
-            | xargs -r -n1 docker rmi -f || true
-          docker image prune -af
-          docker builder prune -af
-          df -h /
-
-      - name: Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
+      - name: Trivy scan
+        uses: ./.github/actions/trivy
         with:
-          image-ref: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
-          format: table
-          ignore-unfixed: true
+          bake-metadata: ${{ steps.bake.outputs.metadata }}
 
-      - name: Grype
-        uses: anchore/scan-action@v7
-        with:
-          image: docker.io/runpod/base:1.0.3-cuda1281-ubuntu2204
 
   build-autoresearch:
     needs: build-base
