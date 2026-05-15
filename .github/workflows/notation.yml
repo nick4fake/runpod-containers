@@ -10,7 +10,8 @@ permissions:
 
 env:
   SOURCE_IMAGE: ubuntu:latest
-  TARGET_IMAGE: mchekm/runpod-containers:ubuntu-latest-notation
+  IMAGE_REPO: docker.io/mchekm/runpod-containers
+  IMAGE_TAG: ubuntu-latest-notation
   SIGNER_NAME: runpod-signer
 
 jobs:
@@ -31,6 +32,7 @@ jobs:
       - name: Pull, retag and push image
         id: push
         run: |
+          TARGET_IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
           docker pull "${SOURCE_IMAGE}"
           docker tag "${SOURCE_IMAGE}" "${TARGET_IMAGE}"
           docker push "${TARGET_IMAGE}"
@@ -74,7 +76,7 @@ jobs:
         run: |
           notation sign \
             --key "${SIGNER_NAME}" \
-            "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
+            "${IMAGE_REPO}@${{ steps.push.outputs.digest }}"
 
       - name: Prepare trust policy and trust store
         run: |
@@ -88,7 +90,7 @@ jobs:
             "trustPolicies": [
               {
                 "name": "runpod-policy",
-                "registryScopes": ["mchekm/runpod-containers"],
+                "registryScopes": ["${IMAGE_REPO}"],
                 "signatureVerification": { "level": "strict" },
                 "trustStores": ["ca:${SIGNER_NAME}"],
                 "trustedIdentities": ["*"]
@@ -100,6 +102,6 @@ jobs:
       - name: Verify Notation signature
         uses: notaryproject/notation-action/verify@v1
         with:
-          target_artifact_reference: mchekm/runpod-containers@${{ steps.push.outputs.digest }}
+          target_artifact_reference: ${{ env.IMAGE_REPO }}@${{ steps.push.outputs.digest }}
           trust_policy: .notation/trustpolicy.json
           trust_store: .notation/truststore
