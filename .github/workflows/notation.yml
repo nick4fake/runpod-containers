@@ -1,0 +1,93 @@
+name: Notation
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/notation.yml"
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_IMAGE: ubuntu:latest
+  TARGET_IMAGE: mchekm/runpod-containers:ubuntu-latest-notation
+  SIGNER_NAME: runpod-signer
+
+jobs:
+  notation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull, retag and push image
+        id: push
+        run: |
+          docker pull "${SOURCE_IMAGE}"
+          docker tag "${SOURCE_IMAGE}" "${TARGET_IMAGE}"
+          docker push "${TARGET_IMAGE}"
+          DIGEST=$(docker buildx imagetools inspect "${TARGET_IMAGE}" \
+                    | awk '/^Digest:/ {print $2}')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Notation
+        uses: notaryproject/notation-action/setup@v1
+        with:
+          version: "1.3.2"
+
+      - name: Restore signing key and certificate
+        env:
+          NOTATION_SIGNING_KEY: ${{ secrets.NOTATION_SIGNING_KEY }}
+          NOTATION_SIGNING_CERT: ${{ secrets.NOTATION_SIGNING_CERT }}
+        run: |
+          KEY_DIR="$HOME/.config/notation/localkeys"
+          mkdir -p "${KEY_DIR}"
+          printf '%s' "${NOTATION_SIGNING_KEY}"  | base64 -d > "${KEY_DIR}/${SIGNER_NAME}.key"
+          printf '%s' "${NOTATION_SIGNING_CERT}" | base64 -d > "${KEY_DIR}/${SIGNER_NAME}.crt"
+          chmod 600 "${KEY_DIR}/${SIGNER_NAME}.key"
+
+          notation key add --default "${SIGNER_NAME}" \
+            --cert-file "${KEY_DIR}/${SIGNER_NAME}.crt" \
+            --key-file  "${KEY_DIR}/${SIGNER_NAME}.key"
+
+          notation key list
+
+      - name: Sign image with Notation
+        run: |
+          notation sign \
+            --key "${SIGNER_NAME}" \
+            "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
+
+      - name: Configure trust policy and store for verification
+        run: |
+          TRUST_STORE_DIR="$HOME/.config/notation/truststore/x509/ca/${SIGNER_NAME}"
+          mkdir -p "${TRUST_STORE_DIR}"
+          cp "$HOME/.config/notation/localkeys/${SIGNER_NAME}.crt" "${TRUST_STORE_DIR}/"
+
+          mkdir -p "$HOME/.config/notation"
+          cat > "$HOME/.config/notation/trustpolicy.json" <<EOF
+          {
+            "version": "1.0",
+            "trustPolicies": [
+              {
+                "name": "runpod-policy",
+                "registryScopes": ["mchekm/runpod-containers"],
+                "signatureVerification": { "level": "strict" },
+                "trustStores": ["ca:${SIGNER_NAME}"],
+                "trustedIdentities": ["*"]
+              }
+            ]
+          }
+          EOF
+
+      - name: Verify Notation signature
+        run: |
+          notation verify "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
