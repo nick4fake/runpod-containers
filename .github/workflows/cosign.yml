@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 env:
-  SOURCE_IMAGE: ubuntu:latest
+  SOURCE_IMAGE: ubuntu:rolling
   TARGET_IMAGE: mchekm/runpod-containers:ubuntu-latest-cosign
 
 jobs:

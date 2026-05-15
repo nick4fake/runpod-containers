@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  SOURCE_IMAGE: ubuntu:latest
+  SOURCE_IMAGE: ubuntu:resolute
   IMAGE_REPO: docker.io/mchekm/runpod-containers
   IMAGE_TAG: ubuntu-latest-notation
   SIGNER_NAME: runpod-signer
