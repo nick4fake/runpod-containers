@@ -34,7 +34,8 @@ jobs:
           docker pull "${SOURCE_IMAGE}"
           docker tag "${SOURCE_IMAGE}" "${TARGET_IMAGE}"
           docker push "${TARGET_IMAGE}"
-          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${TARGET_IMAGE}" | cut -d'@' -f2)
+          DIGEST=$(docker buildx imagetools inspect "${TARGET_IMAGE}" \
+                    | awk '/^Digest:/ {print $2}')
           echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
 
       - name: Install Cosign
