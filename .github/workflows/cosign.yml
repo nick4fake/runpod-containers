@@ -41,7 +41,12 @@ jobs:
         uses: sigstore/cosign-installer@v3
 
       - name: Sign image with Cosign (keyless)
-        env:
-          COSIGN_EXPERIMENTAL: "true"
         run: |
           cosign sign --yes "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
+
+      - name: Verify Cosign signature
+        run: |
+          cosign verify \
+            --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/cosign.yml@${GITHUB_REF}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
