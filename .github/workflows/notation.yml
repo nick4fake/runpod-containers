@@ -48,15 +48,25 @@ jobs:
           NOTATION_SIGNING_KEY: ${{ secrets.NOTATION_SIGNING_KEY }}
           NOTATION_SIGNING_CERT: ${{ secrets.NOTATION_SIGNING_CERT }}
         run: |
-          KEY_DIR="$HOME/.config/notation/localkeys"
+          CONFIG_DIR="$HOME/.config/notation"
+          KEY_DIR="${CONFIG_DIR}/localkeys"
           mkdir -p "${KEY_DIR}"
           printf '%s' "${NOTATION_SIGNING_KEY}"  | base64 -d > "${KEY_DIR}/${SIGNER_NAME}.key"
           printf '%s' "${NOTATION_SIGNING_CERT}" | base64 -d > "${KEY_DIR}/${SIGNER_NAME}.crt"
           chmod 600 "${KEY_DIR}/${SIGNER_NAME}.key"
 
-          notation key add --default "${SIGNER_NAME}" \
-            --cert-file "${KEY_DIR}/${SIGNER_NAME}.crt" \
-            --key-file  "${KEY_DIR}/${SIGNER_NAME}.key"
+          cat > "${CONFIG_DIR}/signingkeys.json" <<EOF
+          {
+            "default": "${SIGNER_NAME}",
+            "keys": [
+              {
+                "name": "${SIGNER_NAME}",
+                "keyPath": "${KEY_DIR}/${SIGNER_NAME}.key",
+                "certPath": "${KEY_DIR}/${SIGNER_NAME}.crt"
+              }
+            ]
+          }
+          EOF
 
           notation key list
 
