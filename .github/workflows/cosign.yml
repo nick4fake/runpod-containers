@@ -1,0 +1,53 @@
+name: Cosign
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/cosign.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  SOURCE_IMAGE: ubuntu:jammy
+  TARGET_IMAGE: mchekm/runpod-containers:ubuntu-latest-cosign
+
+jobs:
+  cosign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull, retag and push image
+        id: push
+        run: |
+          docker pull "${SOURCE_IMAGE}"
+          docker tag "${SOURCE_IMAGE}" "${TARGET_IMAGE}"
+          docker push "${TARGET_IMAGE}"
+          DIGEST=$(docker buildx imagetools inspect "${TARGET_IMAGE}" \
+                    | awk '/^Digest:/ {print $2}')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image with Cosign (keyless)
+        run: |
+          cosign sign --yes "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
+
+      - name: Verify Cosign signature
+        run: |
+          cosign verify \
+            --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/cosign.yml@${GITHUB_REF}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "mchekm/runpod-containers@${{ steps.push.outputs.digest }}"
