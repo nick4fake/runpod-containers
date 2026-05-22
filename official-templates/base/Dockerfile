@@ -34,8 +34,10 @@ ENV TZ=Etc/UTC
 
 WORKDIR /
 
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-    apt-get update --yes && \ # Install
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+
+# Install
+RUN apt-get update --yes && \
     apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends \
     build-essential ca-certificates cifs-utils cmake curl dirmngr dnsutils ffmpeg \
@@ -46,12 +48,15 @@ RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     libxvidcore-dev lsof make mtr nano nfs-common nginx openssh-server rsync slurm-wlm \
     software-properties-common sudo tmux unzip vim wget zip zstd && \
     rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub && \
-    rm -rf /var/lib/apt/lists/* && \
-    find /opt/nvidia /usr/local/cuda* -type d -name 'efa_metrics' \ # Strip AWS EFA Nsight plugin — AWS-only hardware, not used on RunPod. Its nic_sampler Go binary ships old Go stdlib that triggers HIGH Trivy CVEs.
-        -print -exec rm -rf {} + 2>/dev/null || true;
+    rm -rf /var/lib/apt/lists/*
+    
+# Strip AWS EFA Nsight plugin — AWS-only hardware, not used on RunPod.
+# Its nic_sampler Go binary ships old Go stdlib that triggers HIGH Trivy CVEs.
+RUN find /opt/nvidia /usr/local/cuda* -type d -name 'efa_metrics' \
+        -print -exec rm -rf {} + 2>/dev/null || true
 
 # Install Python versions
-RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
+RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get install --yes --no-install-recommends \
         python3.9-dev python3.9-venv python3.9-distutils \
@@ -61,18 +66,27 @@ RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
         python3.13-dev python3.13-venv && \
     apt-get autoremove -y && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*; \
-    curl -sS https://bootstrap.pypa.io/pip/3.9/get-pip.py | python3.9 && \ # Install pip
+    rm -rf /var/lib/apt/lists/*;
+
+# Install pip
+RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+    curl -sS https://bootstrap.pypa.io/pip/3.9/get-pip.py | python3.9 && \
     curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10 && \
     curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 && \
     curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12 && \
-    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13; \
-    python3.9 -m pip install --upgrade --no-cache-dir pip virtualenv && \ # Install virtualenv
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.13;
+
+# Install virtualenv
+RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+    python3.9 -m pip install --upgrade --no-cache-dir pip virtualenv && \
     python3.10 -m pip install --upgrade --no-cache-dir pip virtualenv && \
     python3.11 -m pip install --upgrade --no-cache-dir pip virtualenv && \
     python3.12 -m pip install --upgrade --no-cache-dir pip virtualenv && \
-    python3.13 -m pip install --upgrade --no-cache-dir pip virtualenv; \
-    ln -sf /usr/bin/python3.12 /usr/local/bin/python && \ # Symlink default python/pip
+    python3.13 -m pip install --upgrade --no-cache-dir pip virtualenv;
+
+# Symlink default python/pip
+RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+    ln -sf /usr/bin/python3.12 /usr/local/bin/python && \
     ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip && \
     ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3;
 
@@ -82,7 +96,7 @@ COPY --from=requirements requirements.txt /requirements.txt
 COPY --from=scripts scrub-stale-metadata.py /tmp/scrub-stale-metadata.py
 
 # Install Jupyter and hf_transfer packages
-RUN [[ -n "$RP_SKIP_JUPYTER" ]] && exit 0; \
+RUN [[ -n $RP_SKIP_JUPYTER ]] && exit 0; \
     python -m pip install --upgrade --no-cache-dir -r requirements.txt && \
     python /tmp/scrub-stale-metadata.py /requirements.txt && \
     rm /tmp/scrub-stale-metadata.py
