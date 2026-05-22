@@ -34,10 +34,9 @@ ENV TZ=Etc/UTC
 
 WORKDIR /
 
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-
-# Install 
-RUN apt-get update --yes && \
+# Install
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    apt-get update --yes && \ # Install
     apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends \
     build-essential ca-certificates cifs-utils cmake curl dirmngr dnsutils ffmpeg \
@@ -49,7 +48,7 @@ RUN apt-get update --yes && \
     software-properties-common sudo tmux unzip vim wget zip zstd
     
 # Install Python versions
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get install --yes --no-install-recommends \
         python3.9-dev python3.9-venv python3.9-distutils \
@@ -62,7 +61,7 @@ RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
     rm -rf /var/lib/apt/lists/*;
 
 # Install pip
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
     python3.9  get-pip.py && \
     python3.10 get-pip.py && \
@@ -72,7 +71,7 @@ RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
     rm get-pip.py;
 
 # Install virtualenv
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
     python3.9 -m pip install --upgrade pip virtualenv && \
     python3.10 -m pip install --upgrade pip virtualenv && \
     python3.11 -m pip install --upgrade pip virtualenv && \
@@ -80,15 +79,15 @@ RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
     python3.13 -m pip install --upgrade pip virtualenv;
 
 # Symlink default python/pip
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
-    ln -sf /usr/bin/python3.12 /usr/local/bin/python && \
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
+    ln -sf /usr/bin/python3.12 /usr/local/bin/python && \ 
     ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip && \
     ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3;
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install Jupyter and hf_transfer packages
-RUN [[ -n $RP_SKIP_JUPYTER ]] && exit 0; \
+RUN [[ -n "$RP_SKIP_JUPYTER" ]] && exit 0; \
     python -m pip install --upgrade --no-cache-dir \
         hf_transfer \
         jupyterlab \
