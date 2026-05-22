@@ -15,8 +15,12 @@ RUN git clone --branch "${AUTORESEARCH_REF}" --depth 1 \
 
 WORKDIR /opt/autoresearch
 
-# Install Python dependencies
-RUN uv sync && \
+# Install Python dependencies.
+# --no-build refuses source distributions (which can execute arbitrary code
+# via setup.py during install). If a dep lacks a wheel for linux/amd64, this
+# build will fail loudly — that's intentional. Add per-package exceptions with
+# --no-build-package=<name> only after auditing the source.
+RUN uv sync --no-build && \
     uv run prepare.py # Download data and train tokenizer (~2 min)
 
 # On first boot: copy source files to /workspace (lightweight, persists edits)
