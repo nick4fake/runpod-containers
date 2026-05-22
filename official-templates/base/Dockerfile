@@ -36,7 +36,7 @@ WORKDIR /
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 
-# Install 
+# Install
 RUN apt-get update --yes && \
     apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends \
@@ -46,10 +46,17 @@ RUN apt-get update --yes && \
     libgl1 libhdf5-dev libjpeg-dev liblapack-dev libnuma-dev libpng-dev libpostproc-dev \
     libsm6 libssl-dev libswscale-dev libtiff-dev libv4l-dev libx264-dev libxrender-dev \
     libxvidcore-dev lsof make mtr nano nfs-common nginx openssh-server rsync slurm-wlm \
-    software-properties-common sudo tmux unzip vim wget zip zstd
+    software-properties-common sudo tmux unzip vim wget zip zstd && \
+    rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub && \
+    rm -rf /var/lib/apt/lists/*
     
+# Strip AWS EFA Nsight plugin — AWS-only hardware, not used on RunPod.
+# Its nic_sampler Go binary ships old Go stdlib that triggers HIGH Trivy CVEs.
+RUN find /opt/nvidia /usr/local/cuda* -type d -name 'efa_metrics' \
+        -print -exec rm -rf {} + 2>/dev/null || true
+
 # Install Python versions
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get install --yes --no-install-recommends \
         python3.9-dev python3.9-venv python3.9-distutils \
@@ -61,51 +68,65 @@ RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*;
 
-# Install pip
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python3.9  get-pip.py && \
-    python3.10 get-pip.py && \
-    python3.11 get-pip.py && \
-    python3.12 get-pip.py && \
-    python3.13 get-pip.py && \
-    rm get-pip.py;
+# Install pip via verified get-pip.py
+ARG GET_PIP_COMMIT=0d4515b4d114f9cd820446a4bd4bd0986393d454
+ARG GET_PIP_SHA256=66904bccb878e363db6236ea900e6935e507dcb887e9f178f6212edfe7f46a76
+ARG GET_PIP_39_SHA256=95c0ae79ccf9ac1e47e4187f49081d6ae1f45997afd4549e14f37337cbcfd766
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
+    curl -fsSL -o /tmp/get-pip.py \
+        "https://raw.githubusercontent.com/pypa/get-pip/${GET_PIP_COMMIT}/public/get-pip.py" && \
+    echo "${GET_PIP_SHA256}  /tmp/get-pip.py" | sha256sum -c - && \
+    curl -fsSL -o /tmp/get-pip-3.9.py \
+        "https://raw.githubusercontent.com/pypa/get-pip/${GET_PIP_COMMIT}/public/3.9/get-pip.py" && \
+    echo "${GET_PIP_39_SHA256}  /tmp/get-pip-3.9.py" | sha256sum -c - && \
+    python3.9  /tmp/get-pip-3.9.py && \
+    python3.10 /tmp/get-pip.py && \
+    python3.11 /tmp/get-pip.py && \
+    python3.12 /tmp/get-pip.py && \
+    python3.13 /tmp/get-pip.py && \
+    rm /tmp/get-pip.py /tmp/get-pip-3.9.py
 
 # Install virtualenv
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
-    python3.9 -m pip install --upgrade pip virtualenv && \
-    python3.10 -m pip install --upgrade pip virtualenv && \
-    python3.11 -m pip install --upgrade pip virtualenv && \
-    python3.12 -m pip install --upgrade pip virtualenv && \
-    python3.13 -m pip install --upgrade pip virtualenv;
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
+    python3.9 -m pip install --upgrade --no-cache-dir pip virtualenv && \
+    python3.10 -m pip install --upgrade --no-cache-dir pip virtualenv && \
+    python3.11 -m pip install --upgrade --no-cache-dir pip virtualenv && \
+    python3.12 -m pip install --upgrade --no-cache-dir pip virtualenv && \
+    python3.13 -m pip install --upgrade --no-cache-dir pip virtualenv;
 
 # Symlink default python/pip
-RUN [[ -n $RP_SKIP_PYTHON ]] && exit 0; \
+RUN [[ -n "$RP_SKIP_PYTHON" ]] && exit 0; \
     ln -sf /usr/bin/python3.12 /usr/local/bin/python && \
     ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip && \
     ln -sf /usr/local/bin/pip3.12 /usr/local/bin/pip3;
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install Jupyter and hf_transfer packages
-RUN [[ -n $RP_SKIP_JUPYTER ]] && exit 0; \
-    python -m pip install --upgrade --no-cache-dir \
-        hf_transfer \
-        jupyterlab \
-        ipywidgets \
-        jupyter-archive \
-        notebook==7.4.2;
+COPY --from=requirements requirements.txt /requirements.txt
+COPY --from=scripts scrub-stale-metadata.py /tmp/scrub-stale-metadata.py
 
-# Install filebrowser
-RUN curl -LsSf https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash
+# Install Jupyter and hf_transfer packages
+RUN [[ -n "$RP_SKIP_JUPYTER" ]] && exit 0; \
+    python -m pip install --upgrade --no-cache-dir -r requirements.txt && \
+    python /tmp/scrub-stale-metadata.py /requirements.txt && \
+    rm /tmp/scrub-stale-metadata.py
+
+# Install filebrowser (pinned + SHA-256 verified, avoids `curl | bash`).
+# Bump FILEBROWSER_VERSION + FILEBROWSER_SHA256 together when updating.
+# Checksums: https://github.com/filebrowser/filebrowser/releases
+ARG FILEBROWSER_VERSION=2.63.5
+ARG FILEBROWSER_SHA256=b36ad6296db0a749a5adbc792ab5321d11b307106123d44e171b7c158fcca2d9
+RUN curl -fsSL -o /tmp/filebrowser.tar.gz \
+        "https://github.com/filebrowser/filebrowser/releases/download/v${FILEBROWSER_VERSION}/linux-amd64-filebrowser.tar.gz" && \
+    echo "${FILEBROWSER_SHA256}  /tmp/filebrowser.tar.gz" | sha256sum -c - && \
+    tar -xzf /tmp/filebrowser.tar.gz -C /usr/local/bin filebrowser && \
+    chmod +x /usr/local/bin/filebrowser && \
+    rm /tmp/filebrowser.tar.gz
 
 # NGINX Proxy
 COPY --from=proxy nginx.conf /etc/nginx/nginx.conf
 COPY --from=proxy snippets /etc/nginx/snippets
 COPY --from=proxy readme.html /usr/share/nginx/html/readme.html
-
-# Remove existing SSH host keys
-RUN rm -f /etc/ssh/ssh_host_*
 
 # Copy the README.md
 COPY README.md /usr/share/nginx/html/README.md
@@ -115,7 +136,9 @@ COPY --from=scripts --chmod=755 start.sh /
 
 # Welcome Message
 COPY --from=logo runpod.txt /etc/runpod.txt
-RUN echo 'cat /etc/runpod.txt' >> /root/.bashrc
-RUN echo 'echo -e "\nFor detailed documentation and guides, please visit:\n\033[1;34mhttps://docs.runpod.io/\033[0m and \033[1;34mhttps://blog.runpod.io/\033[0m\n\n"' >> /root/.bashrc
+RUN cat >> /root/.bashrc <<'EOF'
+cat /etc/runpod.txt
+printf "\nFor detailed documentation and guides, please visit:\n\033[1;34mhttps://docs.runpod.io/\033[0m and \033[1;34mhttps://blog.runpod.io/\033[0m\n\n"
+EOF
 
 CMD ["/start.sh"]

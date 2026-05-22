@@ -1,0 +1,38 @@
+name: Hadolint-PR
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: official-templates/base/Dockerfile
+            ignore: DL3006,DL3008,DL3013,DL3022
+          - dockerfile: official-templates/pytorch/Dockerfile
+            ignore: "DL3013,DL3006"
+          - dockerfile: official-templates/autoresearch/Dockerfile
+            ignore: "DL3006"
+          - dockerfile: helper-templates/verify-nccl/Dockerfile
+            ignore: "DL3008"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # TTY + default stdout so hadolint-action's problem matcher surfaces
+      # annotations on the PR "Files changed" tab (SARIF/Code Scanning is much harder to spot).
+      - name: Lint Dockerfile
+        uses: ./.github/actions/hadolint
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          failure-threshold: warning
+          format: tty
+          output-file: /dev/stdout
+          ignore: ${{ matrix.ignore }}
